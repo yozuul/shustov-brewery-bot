@@ -16,6 +16,23 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
-    "noFallthroughCasesInSwitch": false
+    "noFallthroughCasesInSwitch": false,
+    "paths": {
+      "@app/ms-constants": [
+        "../microservice-constants.ts"
+      ],
+      "@bot/keyboard": [
+        "src/bot/keyboards"
+      ],
+      "@bot/keyboard/*": [
+        "src/keyboards/*"
+      ],
+      "@app/common": [
+        "src/common"
+      ],
+      "@app/common/*": [
+        "src/common/*"
+      ],
+    }
   }
 }

@@ -8,6 +8,8 @@ import * as LocalSession from 'telegraf-session-local';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { BotModule } from './bot/bot.module';
+import { UsersModule } from './users/users.module';
+import { User } from './users/models/users.model';
 
 const sessions = new LocalSession({ database: 'session_db.json' });
 
@@ -17,18 +19,19 @@ const sessions = new LocalSession({ database: 'session_db.json' });
         isGlobal: true,
         envFilePath: '.env',
      }),
-    //  SequelizeModule.forRoot({
-    //     dialect: 'sqlite',
-    //     storage: resolve('factory.db'),
-    //     models: [],
-    //     autoLoadModels: true,
-    //     logging: false
-    //  }),
+     SequelizeModule.forRoot({
+        dialect: 'sqlite',
+        storage: resolve('shustov.db.sqlite'),
+        models: [User],
+        autoLoadModels: true,
+        logging: false
+     }),
      TelegrafModule.forRoot({
         middlewares: [sessions.middleware()],
         token: process.env.BOT_TOKEN,
      }),
     BotModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
