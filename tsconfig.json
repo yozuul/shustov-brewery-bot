@@ -21,10 +21,10 @@
       "@app/ms-constants": [
         "../microservice-constants.ts"
       ],
-      "@bot/keyboard": [
+      "@bot/keyboards": [
         "src/bot/keyboards"
       ],
-      "@bot/keyboard/*": [
+      "@bot/keyboards/*": [
         "src/keyboards/*"
       ],
       "@app/common": [
