@@ -1,4 +1,6 @@
-import { Column, DataType, Model, Table } from "sequelize-typescript";
+import { Column, DataType, Model, Table, HasMany } from 'sequelize-typescript'
+
+import { Orders } from './orders.model'
 
 const { INTEGER, STRING } = DataType
 
@@ -9,7 +11,7 @@ interface UserCreationAttrs {
 }
 
 @Table({ tableName: 'users' })
-export class User extends Model<User, UserCreationAttrs> {
+export class Users extends Model<Users, UserCreationAttrs> {
    @Column({
       type: INTEGER,
       unique: true, autoIncrement: true, primaryKey: true
@@ -26,4 +28,7 @@ export class User extends Model<User, UserCreationAttrs> {
    @Column({
       type: STRING, allowNull: true
    }) phone: string
+
+   @HasMany(() => Orders)
+   orders: Orders[]
 }

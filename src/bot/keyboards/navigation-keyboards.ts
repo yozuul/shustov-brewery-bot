@@ -4,7 +4,6 @@ import { Markup } from 'telegraf'
 
 @Injectable()
 export class NavigationKeyboard {
-
    startedUsers() {
       const buttons = [
          Markup.button.callback(
@@ -41,7 +40,7 @@ export class NavigationKeyboard {
          reply_markup: {
          keyboard: [
             [
-               { text: '📞 ПОДТВЕРДИТЬ ТЕЛЕФОН',
+               { text: 'ПОДТВЕРДИТЬ 📞',
                   request_contact: true },
                { text: USERS_BUTTON.BACK.TEXT }
             ]

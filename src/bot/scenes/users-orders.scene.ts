@@ -1,158 +1,94 @@
-import { Scene, SceneEnter, Hears, On, Message, Ctx, Start, Sender } from 'nestjs-telegraf';
-import { Telegraf, Markup } from 'telegraf';
-import { UpdateType as TelegrafUpdateType } from 'telegraf/typings/telegram-types';
+import { Scene, SceneEnter, Hears, On, Ctx, Start, Sender, SceneLeave } from 'nestjs-telegraf';
 
-import { SessionContext } from '@app/common/interfaces';
 import { USERS_BUTTON, USERS_SCENE } from '@app/common/constants';
-import { SceneContext } from '@app/common/interfaces';
-import {UpdateType} from '@app/common/update-type.decorator';
-import {NavigationKeyboard} from '../keyboards/navigation';
+import { SessionContext } from '@app/common/interfaces';
+import { NavigationKeyboard, OrdersKeyboard } from '@bot/keyboards';
+import { menuCleaner, trashCleaner } from '@app/common/utils';
 
 @Scene(USERS_SCENE.ORDERS)
 export class UsersOrdersScene {
+   private menu = null
    constructor(
-      private readonly navigationKeyboard: NavigationKeyboard
-      // private readonly bot: Telegraf<SessionContext>,
-      // private areaService: AreasService,
-      // private fileService: FilesService
+      private readonly navigationKeyboard: NavigationKeyboard,
+      private readonly ordersKeyboard: OrdersKeyboard
    ) {}
+
    @On('callback_query')
-   async submitOrdersHandler(@Ctx() ctx: SceneContext) {
-      const query = ctx.update['callback_query']
-      if(query.data === 'submit')
-      ctx.scene.enter(USERS_SCENE.CART)
+   async submitOrdersHandler(@Ctx() ctx: SessionContext, @Sender('id') id: number) {
+      const query = ctx.callbackQuery
+      const queryData = query['data']
+      const keyboardId = query.message.message_id
+      const userCart = ctx.session.cart
+      // Нажата кнопки "Подтвердить заказ"
+      if(queryData === 'submit_order') {
+         let isOrder = false
+         // Проверяем, что пользователь что-то выбрал
+         if(userCart.products.length > 0) {
+            for (let cartProduct of userCart.products) {
+               if(cartProduct.col > 0) isOrder = true
+            }
+         }
+         if(!isOrder) {
+            await ctx.answerCbQuery('Вы не отметили ни одной позиции')
+            return
+         }
+         // Удаляем меню и заголовок
+         await menuCleaner(ctx, query.message.message_id)
+         await ctx.scene.enter(USERS_SCENE.CART)
+         await ctx.answerCbQuery()
+         return
+      }
+      // Проверяем, нажата ли кнопка +-
+      const [prefix, producId] = queryData.split('__')
+      if(prefix === 'minus' || prefix === 'plus') {
+         const checkProduct = userCart.products.find((cartdProduct) => cartdProduct?.id === producId)
+         if(!checkProduct) {
+            ctx.session.cart.products.push({
+               id: producId, col: 0
+            })
+         }
+         for (let cartProduct of userCart.products) {
+            if(cartProduct.id === producId) {
+               if(cartProduct.col > 0 && prefix === 'minus') {
+                  cartProduct.col -= .5
+               }
+               if(prefix === 'plus') {
+                  cartProduct.col += .5
+               }
+            }
+         }
+      }
+      // Проверяем, нажата ли кнопка тары
+      if(queryData.includes('container')) {
+         ctx.session.cart.container_id = queryData
+      }
+      try {
+         await this.ordersKeyboard.updateMenu(ctx, query.from.id, keyboardId)
+      } catch (error) {
+         console.log(error)
+      }
+      await ctx.answerCbQuery()
    }
    @SceneEnter()
-   async onSceneEnter1(@Ctx() ctx: SceneContext, @Sender('id') senderId: number ) {
-      await ctx.reply('🍻',
-         this.navigationKeyboard.backSubmitButton()
-      )
-      const control1 = [
-         {
-            text: '-', callback_data: `channel_1`
-         },
-         {
-            text: '+', callback_data: `channel_1`
-         }
-      ]
-      const control2 = [
-         {
-            text: '-', callback_data: `channel_1`
-         },
-         {
-            text: '0', callback_data: `channel_1`
-         },
-         {
-            text: '+', callback_data: `channel_1`
-         }
-      ]
-      const currentChannelsMenu = await ctx.reply(`Заказ на сумму 0 руб.`, {
-         reply_markup: {
-            inline_keyboard: [
-               [
-                  {
-                     text: 'Чешское нефильтрованное (2)', callback_data: `channel_1`
-                  },
-               ],
-               control1,
-               [
-                  {
-                     text: 'Чешское фильтрованное (0)', callback_data: `channel_1`
-                  },
-               ],
-               control1,
-               [
-                  {
-                     text: 'Немецкое фильтрованное (3)', callback_data: `channel_1`
-                  },
-               ],
-               control1,
-               [
-                  {
-                     text: 'Немецкое нефильтрованное (0)', callback_data: `channel_1`
-                  },
-               ],
-               control1,
-               [
-                  {
-                     text: 'Тёмное (0)', callback_data: `channel_1`
-                  },
-               ],
-               control1,
-               [
-                  {
-                     text: 'Вишневое (0)', callback_data: `channel_1`
-                  },
-               ],
-               control1,
-               [
-                  {
-                     text: 'ПОДТВЕРДИТЬ ЗАКАЗ 🍺', callback_data: `submit`
-                  }
-               ],
-            ]
-         }
-      })
-      await ctx.reply('Вариант 2')
-      await ctx.reply('🍻')
-      const currentChannelsMenu2 = await ctx.reply(`Заказ на сумму 0 руб.`, {
-         reply_markup: {
-            inline_keyboard: [
-               [
-                  {
-                     text: 'Чешское нефильтрованное', callback_data: `channel_1`
-                  },
-               ],
-               control2,
-               [
-                  {
-                     text: 'Чешское фильтрованное', callback_data: `channel_1`
-                  },
-               ],
-               control2,
-               [
-                  {
-                     text: 'Немецкое фильтрованное', callback_data: `channel_1`
-                  },
-               ],
-               control2,
-               [
-                  {
-                     text: 'Немецкое нефильтрованное', callback_data: `channel_1`
-                  },
-               ],
-               control2,
-               [
-                  {
-                     text: 'Тёмное', callback_data: `channel_1`
-                  },
-               ],
-               control2,
-               [
-                  {
-                     text: 'Вишневое', callback_data: `channel_1`
-                  },
-               ],
-               control2,
-               [
-                  {
-                     text: 'ПОДТВЕРДИТЬ ЗАКАЗ 🍺', callback_data: `submit`
-                  }
-               ],
-            ]
-         }
-      })
-   }
-   @Start()
-   async onStart(ctx: SceneContext) {
-      ctx.scene.enter(USERS_SCENE.STARTED)
+   async onSceneEnter(@Ctx() ctx: SessionContext, @Sender('id') senderId: number ) {
+      const menuTitle = await ctx.reply('🍺', this.navigationKeyboard.backSubmitButton())
+      const ordersMenu = await this.ordersKeyboard.pushOrdersMenu(ctx)
+      ctx.session.trash.push(menuTitle.message_id, ordersMenu.message_id)
    }
    @Hears(USERS_BUTTON.BACK.TEXT)
-   leaveSceneHandler(@Ctx() ctx: SceneContext) {
-      ctx.scene.enter(USERS_SCENE.STARTED)
+   async leaveSceneHandler(@Ctx() ctx: SessionContext) {
+      await ctx.scene.enter(USERS_SCENE.STARTED)
    }
-
+   @Start()
+   async onStart(ctx: SessionContext) {
+      await ctx.scene.enter(USERS_SCENE.STARTED)
+   }
+   @SceneLeave()
+   async onSceneLeave(@Ctx() ctx: SessionContext) {
+      await trashCleaner(ctx)
+   }
    @On('message')
    async msgHandler(ctx: SessionContext) {
+      console.log(this.menu)
    }
 }

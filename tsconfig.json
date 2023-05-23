@@ -33,6 +33,12 @@
       "@app/common/*": [
         "src/common/*"
       ],
+      "@app/database": [
+        "src/database"
+      ],
+      "@app/database/*": [
+        "src/database/*"
+      ],
     }
   }
 }
