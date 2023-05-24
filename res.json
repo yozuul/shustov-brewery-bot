@@ -1,0 +1,24 @@
+{
+	"jsonrpc": "2.0",
+	"protocol": 6,
+	"method": "CRMClients.GetCustomerByParams",
+	"params": {
+		"client_data": {
+			"d": [
+				{
+					"d": [["89015009458", "mobile_phone", null]],
+					"s": [
+						{ "t": "Строка", "n": "Value" },
+						{ "t": "Строка", "n": "Type" },
+						{ "t": "Строка", "n": "Priority" }
+					],
+					"_type": "recordset"
+				}
+			],
+			"s": [{ "n": "ContactData", "t": "Выборка" }],
+			"_type": "record"
+		},
+		"options": null
+	},
+	"id": 1
+}

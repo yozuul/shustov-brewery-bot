@@ -7,6 +7,7 @@ const { INTEGER, STRING } = DataType
 interface UserCreationAttrs {
    tgId: string
    phone: string
+   name: string
    role: string
 }
 
@@ -20,6 +21,10 @@ export class Users extends Model<Users, UserCreationAttrs> {
    @Column({
       type: STRING, allowNull: false
    }) role: string
+
+   @Column({
+      type: STRING, allowNull: false
+   }) name: string
 
    @Column({
       type: STRING, allowNull: true

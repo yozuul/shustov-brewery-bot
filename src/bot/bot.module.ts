@@ -14,6 +14,9 @@ import {
       BotService, BotUpdate,
       UserStartedScene, UsersAboutScene, UsersBonusScene, UsersProductsScene, UsersOrdersScene, UsersCartScene,
       NavigationKeyboard, OrdersKeyboard, CartKeyboard
+   ],
+   exports: [
+      BotService
    ]
 })
 export class BotModule {}

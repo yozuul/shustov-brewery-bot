@@ -1,9 +1,9 @@
-import { Scene, SceneEnter, Hears, On,Ctx, Start, Sender, SceneLeave } from 'nestjs-telegraf';
+import { Scene, SceneEnter, Hears, On,Ctx, Start, Sender, SceneLeave } from 'nestjs-telegraf'
 
-import { USERS_BUTTON, USERS_SCENE } from '@app/common/constants';
-import { SessionContext } from '@app/common/interfaces';
-import { NavigationKeyboard, CartKeyboard } from '@bot/keyboards';
-import { trashCleaner } from '@app/common/utils';
+import { USERS_BUTTON, USERS_SCENE } from '@app/common/constants'
+import { SessionContext } from '@app/common/interfaces'
+import { NavigationKeyboard, CartKeyboard } from '@bot/keyboards'
+import { trashCleaner } from '@app/common/utils'
 
 @Scene(USERS_SCENE.CART)
 export class UsersCartScene {
@@ -14,6 +14,7 @@ export class UsersCartScene {
    @On('callback_query')
    async submitOrdersHandler(@Ctx() ctx: SessionContext) {
       const query = ctx.callbackQuery
+      // console.log(query.from.id)
       const queryData = query['data']
       const keyboardId = query.message.message_id
       if(queryData === 'place_order') {
@@ -24,19 +25,31 @@ export class UsersCartScene {
       if(queryData === 'time') {
          ctx.answerCbQuery(this.cartKeyboard.cbAnswer.onlyAuthUsers);
       }
-      const [time, action] = queryData.split('_')
+      const [time, operator] = queryData.split('_')
+      let isUpdate = { h: null, m: null, d: null }
       if(time === 'h') {
-         this.cartKeyboard.updateTime('hours', action, ctx)
+         isUpdate.h = await this.cartKeyboard.updateTime('hours', operator, ctx)
       }
       if(time === 'm') {
-         this.cartKeyboard.updateTime('minutes', action, ctx)
+         isUpdate.m = await this.cartKeyboard.updateTime('minutes', operator, ctx)
       }
-      ctx.answerCbQuery()
+      const [isDay, when] = queryData.split('_')
+      if(isDay === 'day') {
+         isUpdate.d = await this.cartKeyboard.updateDay(when, ctx)
+      }
+      if(isUpdate.h || isUpdate.m || isUpdate.d) {
+         await this.cartKeyboard.updateMenu(query.from.id, keyboardId, ctx)
+      }
+      try {
+         // ctx.answerCbQuery()
+      } catch (error) {
+         return
+      }
    }
    @SceneEnter()
    async onSceneEnter1(@Ctx() ctx: SessionContext, @Sender('id') senderId: number ) {
       const menuTitle = await ctx.reply(
-         'Проверьте свой заказ, и укажите время к которому его подготовить',
+         'Проверьте свой заказ,\nи укажите время к которому его подготовить:',
          this.navigationKeyboard.backAuthButton()
       )
       const submitMenu = await this.cartKeyboard.pushCartMenu(ctx)
@@ -56,6 +69,7 @@ export class UsersCartScene {
    }
    @On('message')
    async onSceneEnter(@Ctx() ctx: SessionContext, @Sender('id') senderId: number) {
-      const totalOrder = this.cartKeyboard.pushCartMenu(ctx)
+      console.log(senderId)
+      // const totalOrder = this.cartKeyboard.pushCartMenu(ctx)
    }
 }

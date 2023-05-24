@@ -27,6 +27,12 @@
       "@bot/keyboards/*": [
         "src/keyboards/*"
       ],
+      "@app/bot": [
+        "src/bot"
+      ],
+      "@app/bot/*": [
+        "src/bot/*"
+      ],
       "@app/common": [
         "src/common"
       ],

@@ -1,55 +1,47 @@
-import { USERS_BUTTON } from '@app/common/constants';
 import { Injectable } from '@nestjs/common';
-import { Markup } from 'telegraf'
-
-import { ProductsService } from '@app/database';
+import { ProductService } from '@app/database';
 
 @Injectable()
 export class OrdersKeyboard {
    constructor(
-      private productsRepo: ProductsService
+      private productsRepo: ProductService
    ) {}
+   // Инициируем меню
    async pushOrdersMenu(ctx) {
-      const { products, container_id } = ctx.session.cart
-      const buttons = await this.productsButton(products, container_id)
-      const summ = await this.calc(products)
+      ctx.session.cart.db_products = await this.productsRepo.getAll()
+      const summ = await this.calc(ctx.session.cart.added_products)
       const menu = await ctx.reply(
          `Заказ на сумму ${summ} руб.`, {
             reply_markup: {
-               inline_keyboard: buttons
+               inline_keyboard: await this.productsButton(ctx.session.cart)
             }
          }
       )
       return menu
    }
-
-   async updateMenu(ctx, userId, keyboardId) {
-      const { products, container_id } = ctx.session.cart
-      const buttons = await this.productsButton(products, container_id)
-      const summ = await this.calc(products)
+   // Обновляем меню
+   async updateMenu(userId, keyboardId, ctx) {
+      const summ = await this.calc(ctx.session.cart.added_products)
       await ctx.telegram.editMessageText(
          userId, keyboardId, null,
          `Заказ на сумму ${summ} руб.`, {
          reply_markup: {
-            inline_keyboard: buttons
+            inline_keyboard: await this.productsButton(ctx.session.cart)
          }
       })
-      // await ctx.telegram.editMessageReplyMarkup(
-      //    userId, keyboardId, null, {
-      //    inline_keyboard: buttons
-      // })
    }
 
-   async productsButton(cartProducts, containerId) {
-      const existProducts = await this.productsRepo.getAll()
+   async productsButton(cart) {
       const buttons = []
-      for (let product of existProducts) {
+      for (let dbProduct of cart.db_products) {
          // Ищем в сессии корзины уже добавленные товары, и добавляем количество, если есть
-         const callbackBtnId = `product_${product.id}`
-         const cartProduct = cartProducts.find((cartProduct => cartProduct.id === callbackBtnId))
+         const callbackBtnName = dbProduct.callback_data
+         const addedToCart = cart.added_products.find((cartProduct) => {
+            return cartProduct.callback_data === callbackBtnName
+         })
          const btnData = {
-            product: [{ text: product.name, callback_data: callbackBtnId }],
-            control: this.controlButtons(callbackBtnId, cartProduct)
+            product: [{ text: dbProduct.name, callback_data: callbackBtnName }],
+            control: this.controlButtons(callbackBtnName, addedToCart)
          }
          buttons.push(btnData.product, btnData.control)
       }
@@ -57,7 +49,7 @@ export class OrdersKeyboard {
          [{
             text: 'Выберите тару:', callback_data: `select_containers`
          }],
-         this.containersButtons(containerId),
+         this.containersButtons(cart.container_id),
          [{
             text: 'ПОДТВЕРДИТЬ ЗАКАЗ 🍺', callback_data: `submit_order`
          }]
@@ -65,13 +57,13 @@ export class OrdersKeyboard {
      return buttons
    }
 
-   controlButtons(productId, cartProduct) {
+   controlButtons(callbackBtnName, addedToCart) {
       let col = 0
-      if(cartProduct) col = cartProduct.col
+      if(addedToCart) col = addedToCart.col
       return [
-         { text: '-', callback_data: `minus__${productId}` },
-         { text: col, callback_data: `total__${productId}` },
-         { text: '+', callback_data: `plus__${productId}` }
+         { text: '-', callback_data: `minus__${callbackBtnName}` },
+         { text: col, callback_data: `total__${callbackBtnName}` },
+         { text: '+', callback_data: `plus__${callbackBtnName}` }
       ]
    }
 
@@ -93,7 +85,7 @@ export class OrdersKeyboard {
       if(cartProducts.length > 0) {
          for (let cartProduct of cartProducts) {
             // ID в корзине хранится в виде product_1
-            const { price } = await this.productsRepo.getPrice(cartProduct.id)
+            const { price } = await this.productsRepo.findByCartId(cartProduct.id)
             summ += (price * cartProduct.col)
          }
       }

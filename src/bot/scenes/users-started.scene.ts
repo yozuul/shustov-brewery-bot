@@ -47,7 +47,8 @@ export class UserStartedScene {
    @Hears(USERS_BUTTON.STARTED.ORDERS.TEXT)
    async ordersSceneHandler(@Ctx() ctx: SessionContext) {
       ctx.session.cart = {
-         products: [], container_id: 'container_1', day: 'day_near', time: { h: null, m: null }
+         db_products: [],
+         added_products: [], container_id: 'container_1', day: 'day_near', time: null
       }
       await ctx.scene.enter(USERS_SCENE.ORDERS)
       // menu_id: null, menu_title_id: null,

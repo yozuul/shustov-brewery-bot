@@ -1,13 +1,14 @@
 import { Column, DataType, Model, Table, HasMany } from 'sequelize-typescript'
 
-import { Orders } from './orders.model'
+import { OrdersList } from './orders-list.model.'
 
 const { INTEGER, STRING } = DataType
 
 interface ProductsCreationAttrs {
    name: string
-   alc: number
+   alc: string
    price: number
+   callback_data: string
 }
 
 @Table({ tableName: 'products' })
@@ -22,13 +23,17 @@ export class Products extends Model<Products, ProductsCreationAttrs> {
    }) name: string
 
    @Column({
-      type: INTEGER, allowNull: false
-   }) alc: number
+      type: STRING, allowNull: false
+   }) alc: string
 
    @Column({
       type: INTEGER, allowNull: false
    }) price: number
 
-   @HasMany(() => Orders)
-   order: Orders
+   @Column({
+      type: STRING, allowNull: false
+   }) callback_data: string
+
+   @HasMany(() => OrdersList)
+   ordersList: OrdersList
 }

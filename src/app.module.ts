@@ -10,6 +10,7 @@ import { BotModule } from './bot/bot.module'
 import { DatabaseModule } from '@app/database'
 import { GoogleSheetsModule } from './google-sheets/google-sheets.module'
 import { CheckersModule } from './checkers/checkers.module'
+import { SbisModule } from './sbis/sbis.module';
 
 const sessions = new LocalSession({ database: 'session_db.json' })
 
@@ -28,6 +29,7 @@ const sessions = new LocalSession({ database: 'session_db.json' })
 		DatabaseModule,
 		GoogleSheetsModule,
 		CheckersModule,
+		SbisModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

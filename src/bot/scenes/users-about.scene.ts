@@ -13,14 +13,14 @@ export class UsersAboutScene {
    async onSceneEnter1(@Ctx() ctx: SessionContext, @Sender('id') senderId: number ) {
       try {
          await ctx.reply(
-            'Пивоварня Шустова\nКто в нашей пивовране не бывал, тот Иркутска не видал!\nНайти нас можно по адресу: бульвар Гагарина, 38А\nТЦ СмайлМолл​Баумана, 233Б​3.7 помещение; 1 этаж​\nГрафик работы с 12:00 до 23:00. Тел. 8-927-221-66-88',
+            'Пивоварня Шустова\nКто в нашей пивовране не бывал, тот Иркутска не видал!\nНайти нас можно по адресу: ул. Баумана, стр. 233б, пом. 3/7​\nГрафик работы с 12:00 до 23:00. Тел. 8-927-221-66-88',
             this.navigationKeyboard.backButton()
          )
       } catch (error) {
          console.log(error, 'USERS_SCENE.ABOUT, ctx.reply')
       }
       try {
-         await ctx.telegram.sendLocation(senderId, 52.279577, 104.275836, {
+         await ctx.telegram.sendLocation(senderId, 52.3382560914137, 104.185234172527, {
             horizontal_accuracy: 5, proximity_alert_radius: 10
          })
       } catch (error) {
