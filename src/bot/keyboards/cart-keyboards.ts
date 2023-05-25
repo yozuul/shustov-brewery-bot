@@ -1,21 +1,19 @@
 import { Injectable } from '@nestjs/common'
-
 import { ProductService } from '@app/database'
 
 @Injectable()
 export class CartKeyboard {
-   private totalOrderText = null
    private isUdate = false
    constructor(
       private productsRepo: ProductService
    ) {}
    // Инициализируем меню при входе в сценарий
    async pushCartMenu(ctx) {
-      this.totalOrderText = await this.totalOrderTextCalc(ctx)
+      ctx.session.cart.orderText = await this.totalOrderTextCalc(ctx)
       this.setDefaultTime(ctx)
 
       const submitMenu = await ctx.reply(
-         this.totalOrderText, {
+         ctx.session.cart.orderText, {
          parse_mode: 'HTML',
          reply_markup: {
             inline_keyboard: this.buttonsData(ctx)
@@ -36,32 +34,39 @@ export class CartKeyboard {
          console.log('Меню не обновлено')
       }
    }
+   // Время работы
+   get openingHours() {
+      return {
+         from: this.formatterHoursMinutes(12, 0),
+         to: this.formatterHoursMinutes(23, 0),
+      }
+   }
    // ПРОВЕРКА УСЛОВИЙ ПРИ ИЗМЕНЕНИИ ВРЕМЕНИ
    // Проверка времени открытия
-   checkOpeningTime(updatedTime, ctx) {
+   async checkOpeningTime(updatedTime, ctx) {
       const updateDate = new Date(updatedTime)
-      // Вероверяем что выбранное время не меньше текущего + 20 мин, и не выбрано "Завтра"
-      if(ctx.session.cart.day !== 'day_tomorrow') {
-         const currentTime = new Date()
+      // Проверяем, что выбранное время не больше времени закрытия
+      const openTo = this.openingHours.to
+      const openToMinus = new Date(openTo.setMinutes(openTo.getMinutes() - 10))
+      if(updateDate > openToMinus) {
+         await ctx.answerCbQuery('Мы работаем до 23:00')
+         return false
+      }
+      // Проверяем, что выбранное время не меньше времени открытия
+      const openFrom = this.openingHours.from
+      const openFromMinus = new Date(openFrom.setMinutes(openFrom.getMinutes() + 10))
+      if(updateDate < openFromMinus) {
+         await ctx.answerCbQuery('Мы работаем c 12:00')
+         return false
+      }
+      // Проверяем что выбранное время не меньше текущего + 10 мин
+      if(ctx.session.cart.day !== 'day_tomorrow') { // Если заказ не на завтра
          const currentTimePlus = new Date()
-         currentTime.setMinutes(currentTime.getMinutes() + 10)
+         currentTimePlus.setMinutes(currentTimePlus.getMinutes() + 10)
          if(updateDate < currentTimePlus) {
-            ctx.session.cart.time = currentTimePlus
-            ctx.answerCbQuery('Нельзя указать время меньше текущего')
+            await ctx.answerCbQuery('Нельзя указать время меньше текущего')
             return false
          }
-      }
-      // Проверяем, что выбранное время не больше времени закрытия
-      if(updateDate > this.openingHours.to) {
-         ctx.answerCbQuery('Мы работаем до 23:00', ctx)
-         return false
-      }
-      // Проверяем что выбранное время не меньше времени открытия + 20 мин
-      const openFrom = this.openingHours.from
-      const minPlus = new Date(openFrom.setMinutes(openFrom.getMinutes() + 20))
-      if(updateDate < minPlus) {
-         ctx.answerCbQuery('Мы работаем c 12:00', ctx)
-         return false
       }
       return true
    }
@@ -70,18 +75,12 @@ export class CartKeyboard {
       const currentTime = new Date()
       // Время работы + 20 минут
       const maxOrderTime = new Date(currentTime.getTime() + 20 * 60000)
-      const cartTime = new Date(ctx.session.cart.time)
       if(maxOrderTime > this.openingHours.to) {
          ctx.session.cart.time = this.openingHours.from
          ctx.session.cart.day = 'day_tomorrow'
          this.isUdate = true
          ctx.answerCbQuery('Онлайн заказ можно сделать минимум за 20 минут до закрытия')
          return
-      }
-      // Если текущее время больше времени корзина на 20 мин, обновляем корзину
-      if(currentTime > cartTime) {
-         ctx.session.cart.time = new Date(maxOrderTime)
-         this.isUdate = true
       }
       return new Date(ctx.session.cart.time)
    }
@@ -97,7 +96,7 @@ export class CartKeyboard {
       // Выполняем операцию по расчёту времени в зависимости от нажатых пользователем кнопок
       const updatedTime = this.changeTime(cartTime, timeUnit, operator)
       // Проверяем, что значение попадает в период времени работы
-      const isUpdate = this.checkOpeningTime(updatedTime, ctx)
+      const isUpdate = await this.checkOpeningTime(updatedTime, ctx)
       if(isUpdate) {
          // Если всё норм, обновляем время в сессии, и ставим флаг, что надо обновить меню
          ctx.session.cart.time = new Date(updatedTime)
@@ -106,8 +105,12 @@ export class CartKeyboard {
          }
          this.isUdate = true
       }
+      if(!isUpdate) {
+         ctx.answerCbQuery()
+      }
       return this.isUdate
    }
+
    async updateDay(selectedDay, ctx) {
       this.isUdate = false
       const dayId = `day_${selectedDay}`
@@ -175,9 +178,10 @@ export class CartKeyboard {
    // На какое время
    timeViewButton(ctx) {
       const { hours, minutes } = this.getFormatedTime(ctx)
+      const { hourEmoji, minuteEmoji } = this.emojiDigit(hours, minutes)
       return [
          {
-            text: `${hours} : ${minutes}`, callback_data: `time`
+            text: `${hourEmoji} : ${minuteEmoji}`, callback_data: `time`
          }
       ]
    }
@@ -228,13 +232,6 @@ export class CartKeyboard {
       ctx.session.cart.time = currentTimePlus
       ctx.session.cart.day = 'day_near'
    }
-   // Время работы
-   get openingHours() {
-      return {
-         from: this.formatterHoursMinutes(12, 0),
-         to: this.formatterHoursMinutes(23, 0),
-      }
-   }
    // Форматирование времени работы
    formatterHoursMinutes(h, m) {
       const currentTime = new Date()
@@ -246,12 +243,17 @@ export class CartKeyboard {
    async totalOrderTextCalc(ctx) {
       let orderText = ''
       let totalSumm = null
-      const { products } = ctx.session.cart
-      for (let cartProduct of products) {
-         const { price, name } = await this.productsRepo.findByCartId(cartProduct.id)
-         const sumBerProduct = cartProduct.col * price
-         totalSumm += sumBerProduct
-         orderText += `<b>${name}: ${cartProduct.col} л.</b>\nСумма: ${sumBerProduct} руб. (${price} руб./литр)\n---\n`
+      const { db_products, added_products } = ctx.session.cart
+      for (let addedProduct of added_products) {
+         const callbackName = addedProduct.callback_data
+         const { price, name } = db_products.find((product) => {
+            return product.callback_data == callbackName
+         })
+         const sumPerProduct = addedProduct.col * price
+         totalSumm += sumPerProduct
+         orderText += `<b>${name}: ${addedProduct.col} л.</b>\n`
+         orderText += `Сумма: ${sumPerProduct} руб. (${price} руб./литр)\n`
+         orderText += `---\n`
       }
       orderText += `💳 К ОПЛАТЕ: ${totalSumm} руб.`
       return orderText
@@ -260,6 +262,17 @@ export class CartKeyboard {
    get cbAnswer() {
       const onlyAuthUsers = 'Оформление онлайн заказа доступно только участникам бонусной программы.\nДля проверки статуса, нажмите на кнопку "ПОДТВЕРДИТЬ ТЕЛЕФОН"'
       const stopTapAround = 'Для установки времени воспользуйтесь кнопками [+] [-]'
-      return { onlyAuthUsers }
+      return { onlyAuthUsers, stopTapAround }
+   }
+
+   emojiDigit(hours, minutes) {
+      const emoji = {
+         '0': '0️⃣', '1': '1️⃣', '2': '2️⃣', '3': '3️⃣', '4': '4️⃣', '5': '5️⃣', '6': '6️⃣', '7': '7️⃣', '8': '8️⃣', '9': '9️⃣'
+      }
+      const h = hours.split('').map((dig) => emoji[dig])
+      const m = minutes.split('').map((dig) => emoji[dig])
+      return {
+         hourEmoji: h.join(''), minuteEmoji: m.join('')
+      }
    }
 }

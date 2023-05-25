@@ -14,14 +14,16 @@ export class ProductService {
       await this.productsRepo.destroy({ where: {} })
       return this.productsRepo.bulkCreate(newProducts)
    }
-   async findByCartId(productCallbackId) {
+   async findByCallbackData(productCallbackName) {
       return this.productsRepo.findOne({
-         where: { id: productCallbackId.split('_')[1] },
+         where: { callback_data: productCallbackName },
          attributes: ['id', 'price', 'name'],
          raw: true
       })
    }
-   async getAll() {
-      return this.productsRepo.findAll()
+   async getAllForCart() {
+      return this.productsRepo.findAll({
+         attributes: ['name', 'price', 'callback_data']
+      })
    }
 }

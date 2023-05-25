@@ -16,7 +16,8 @@ export class UsersOrdersScene {
    ) {}
 
    async checkTime(ctx) {
-      const serverTime = new Date();
+      const serverTime = new Date()
+      console.log(serverTime)
       const currentTimePlus = new Date(serverTime.getTime() + 20 * 60000)
       if(currentTimePlus > this.cartKeyboard.openingHours.to) {
          await ctx.answerCbQuery('Доставка будет возможна только на завтра', {
@@ -30,12 +31,13 @@ export class UsersOrdersScene {
       const queryData = query['data']
       const keyboardId = query.message.message_id
       const userCart = ctx.session.cart
+      const addedProducts = userCart.added_products
       // Нажата кнопки "Подтвердить заказ"
       if(queryData === 'submit_order') {
          let isOrder = false
          // Проверяем, что пользователь что-то выбрал
-         if(userCart.products.length > 0) {
-            for (let cartProduct of userCart.products) {
+         if(addedProducts.length > 0) {
+            for (let cartProduct of addedProducts) {
                if(cartProduct.col > 0) isOrder = true
             }
          }
@@ -51,23 +53,25 @@ export class UsersOrdersScene {
          return
       }
       // Проверяем, нажата ли кнопка +-
-      const [prefix, producId] = queryData.split('__')
+      const [prefix, callback_data] = queryData.split('__')
       if(prefix === 'minus' || prefix === 'plus') {
-         const checkProduct = userCart.products.find((cartdProduct) => cartdProduct?.id === producId)
-         if(!checkProduct) {
-            ctx.session.cart.products.push({
-               id: producId, col: 0
+         const addedToCart = addedProducts.find((cartProduct) => {
+            return cartProduct.callback_data === callback_data
+         })
+         if(!addedToCart) {
+            ctx.session.cart.added_products.push({
+               callback_data: callback_data, col: 0
             })
          }
-         for (let cartProduct of userCart.products) {
-            if(cartProduct.id === producId) {
-               if(cartProduct.col > 0 && prefix === 'minus') {
-                  cartProduct.col -= .5
+         for (let addedProduct of addedProducts) {
+            if(addedProduct.callback_data === callback_data) {
+               if(addedProduct.col > 0 && prefix === 'minus') {
+                  addedProduct.col -= .5
                   this.isUdate = true
                }
                if(prefix === 'plus') {
+                  addedProduct.col += .5
                   this.isUdate = true
-                  cartProduct.col += .5
                }
             }
          }
@@ -91,6 +95,7 @@ export class UsersOrdersScene {
 
    @SceneEnter()
    async onSceneEnter(@Ctx() ctx: SessionContext, @Sender('id') senderId: number) {
+      console.log('Enter Scene ::', USERS_SCENE.ORDERS)
       // Добавляем кнопку "Назад"
       const menuTitle = await ctx.reply('🍺',
          this.navigationKeyboard.backSubmitButton()

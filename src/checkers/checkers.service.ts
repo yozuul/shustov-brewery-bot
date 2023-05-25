@@ -2,7 +2,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common'
 import { Cron } from '@nestjs/schedule';
 
 import { BotService } from '@app/bot/bot.service';
-import { OrsderService, ProductService } from '@app/database'
+import { OrderService, ProductService } from '@app/database'
 import { GoogleSheetsService } from 'src/google-sheets/google-sheets.service';
 
 
@@ -11,14 +11,79 @@ export class CheckerService implements OnModuleInit {
    constructor(
       private botService: BotService,
       private tableService: GoogleSheetsService,
-      private orderRepo: OrsderService,
+      private orderRepo: OrderService,
       private productsRepo: ProductService,
    ) {}
 
-   // @Cron('0 * * * * *')
-   // handleCron() {
-   // }
+   @Cron('0 * * * * *')
+   async handleOrdersCheck() {
+      try {
+         await this.checkOrders()
+      } catch (error) {
+         console.log(error)
+      }
+   }
+   @Cron('0 */5 * * * *')
+   async handleProductsCheck() {
+      try {
+         this.checkProducts()
+      } catch (error) {
+         console.log(error)
+      }
+   }
 
+   // Проверка заказов
+   async checkOrders() {
+      let sended = false
+      console.log('+CheckerService [checkOrders]')
+      let todayOrders = await this.orderRepo.getOrders('today')
+      console.log('Новых заказов на сегодня к рассылке:', todayOrders.length)
+      let tomorrowOrders: any = await this.orderRepo.getOrders('tomorrow')
+      tomorrowOrders = this.dateChecker(tomorrowOrders)
+      const currentOrders = [...todayOrders, ...tomorrowOrders]
+      if(currentOrders.length > 0) {
+         for (let order of currentOrders) {
+            console.log(order)
+            if(order.orderId) {
+               try {
+                  await this.botService.sendOrdersNotify(order)
+                  sended = true
+               } catch (error) {
+                  console.log(error)
+                  sended = false
+               }
+               try {
+                  await this.tableService.pushOrder(order)
+                  sended = true
+               } catch (error) {
+                  console.log(error)
+                  sended = false
+               }
+               if(sended) {
+                  await this.orderRepo.updateOrderNotifyStatus(order.orderId)
+               }
+            }
+         }
+         console.log('Рассылка выполнена:', sended)
+      }
+   }
+   // Проверка заказов сделанных на завтра
+   dateChecker(tomorrowOrders) {
+      console.log('Новых заказов на завтра всего:', tomorrowOrders.length)
+      let ordersTimeToday = []
+      if(tomorrowOrders.length > 0) {
+         for (let order of tomorrowOrders) {
+            const currentTimeMinus = new Date()
+            currentTimeMinus.setHours(currentTimeMinus.getHours() - 1)
+            if(currentTimeMinus > order.date) {
+               ordersTimeToday.push(order)
+            }
+         }
+      }
+      console.log('Вчерашних заказов к рассылке:', ordersTimeToday.length)
+      return ordersTimeToday
+   }
+   // Проверка товаров
    async checkProducts() {
       let updated = true
       console.log('+CheckerService [checkProducts]')
@@ -39,46 +104,6 @@ export class CheckerService implements OnModuleInit {
          console.log(error)
       }
       console.log('Обновление товаров выполнено:', updated)
-   }
-
-   dateChecker(tomorrowOrders) {
-      console.log('Новых заказов на завтра всего:', tomorrowOrders.length)
-      let ordersTimeToday = []
-      if(tomorrowOrders.length > 0) {
-
-      }
-      console.log('Вчерашних заказов к рассылке:', ordersTimeToday.length)
-      return tomorrowOrders
-   }
-
-   async checkOrders() {
-      let sended = true
-      console.log('+CheckerService [checkOrders]')
-      let todayOrders = await this.orderRepo.getTodayOrders()
-      console.log('Новых заказов на сегодня к рассылке:', todayOrders.length)
-      let tomorrowOrders: any = await this.orderRepo.getTommorowOrders()
-      tomorrowOrders = this.dateChecker(tomorrowOrders)
-      const currentOrders = [...todayOrders, ...tomorrowOrders]
-      if(currentOrders.length > 0) {
-         for (let order of currentOrders) {
-            try {
-               await this.botService.sendOrdersNotify(order)
-            } catch (error) {
-               console.log(error)
-               sended = false
-            }
-            try {
-               await this.tableService.pushOrder(order)
-            } catch (error) {
-               console.log(error)
-               sended = false
-            }
-            if(sended) {
-               this.orderRepo.updateOrderNotifyStatus(order.id)
-            }
-         }
-         console.log('Рассылка выполнена:', sended)
-      }
    }
 
    onModuleInit() {

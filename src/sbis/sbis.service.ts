@@ -25,12 +25,28 @@ export class SbisService implements OnModuleInit {
        }
    }
 
-   async getBonuses(phone) {
+   async getBonuses(uuid) {
       const salesPointId = '211'
+      const accessData = await this.auth()
+      const url = `https://api.sbis.ru/retail/customer/${uuid}/bonus-balance?pointId=${salesPointId}`
+      try {
+         const response = await fetch(url, {
+            headers: {
+               'Content-Type': 'application/json; charset=utf-8',
+               'X-SBISAccessToken': accessData.access_token,
+               'X-SBISSessionId': accessData.sid,
+            }
+         })
+         const data = await response.json()
+         return data
+      } catch (error) {
+         console.log(error)
+         return null
+      }
    }
 
-   async findUser() {
-      const url = 'https://online.sbis.ru/service/?x_version=22.3100-709&x_version=22.2134-244';
+   async findUser(userPhone) {
+      const url = 'https://online.sbis.ru/service/?x_version=22.3100-709&x_version=22.2134-244'
       const accessData = await this.auth()
       const requestData = {
          jsonrpc: '2.0', protocol: 6,
@@ -39,7 +55,7 @@ export class SbisService implements OnModuleInit {
            client_data: {
              d: [
                {
-                 d: [['89149424294', 'mobile_phone', null]],
+                 d: [[userPhone, 'mobile_phone', null]],
                  s: [
                    { t: 'Строка', n: 'Value' },
                    { t: 'Строка', n: 'Type' },
@@ -67,9 +83,14 @@ export class SbisService implements OnModuleInit {
             body: JSON.stringify(requestData)
          })
          const { result } = await response.json()
-         console.log(result)
+         if(!result || (Array.isArray(result.d) && result.d.length == 0)) {
+            return false
+         } else {
+            return result.d
+         }
        } catch (error) {
-         console.error('Something went wrong!', error);
+         console.error('Something went wrong!', error)
+         return false
        }
    }
 

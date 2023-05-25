@@ -22,8 +22,32 @@ export class UserService {
          }, defaults: data
       })
    }
-
+   async isUserAuth(tgId) {
+      return this.usersRepo.findOne({
+         where: { tgId: tgId }
+      })
+   }
+   async deleteUser(phone) {
+      try {
+         return this.usersRepo.destroy({
+            where: { phone: phone }
+         })
+      } catch (error) {
+         return false
+      }
+   }
+   async updateBonuse(tgId, bonusNum) {
+      const user = await this.usersRepo.findOne({
+         where: { tgId: tgId }
+      })
+      if(user) {
+         user.bonus = bonusNum
+         await user.save()
+      }
+   }
    async findById(tgId) {
-      return true
+      return this.usersRepo.findOne({
+         where: { tgId: tgId }
+      })
    }
 }

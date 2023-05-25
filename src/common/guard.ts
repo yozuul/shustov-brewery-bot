@@ -10,29 +10,26 @@ export class AuthGuard implements CanActivate {
    canActivate(
       context: ExecutionContext,
    ): boolean | Promise<boolean> | Observable<boolean> {
-      const request = context.switchToHttp().getRequest();
-      if(request.update['message']?.from.id)
-      this.checkUser(request, request.update['message'].from.id)
-      // console.log(request)
-      //  throw new UnauthorizedException('dfdf')
-      return true;
-   }
-
-   async checkUser(request, tgId) {
-      const user = await this.userService.findById(tgId)
-      if(!user) {
-         const sender = request.update.message.from.id
-         const ctx = request.telegram
-         request['scene'].leave()
-         await ctx.sendMessage(sender, 'Авторизация по номеру телефона', {
-         reply_markup: {
-            keyboard: [[
-               { text: 'Вход',
-                  request_contact: true },
-               { text: 'Отмена' }
-            ]], one_time_keyboard: true, force_reply: true }
-         })
+      const request = context.switchToHttp().getRequest()
+      const senderId = request.update['message'].from.id
+      if(!senderId) {
          return false
       }
+      if(!this.checkUser(senderId)) {
+         return false
+      }
+      console.log(`Пользователь ${senderId} зашёл в настройки`)
+      return true
+   }
+
+   async checkUser(tgId) {
+      const user = await this.userService.isUserAuth(tgId)
+      if(user?.role !== 'admin') {
+         return false
+      }
+   }
+   throwError() {
+      // console.log('error')
+      // throw new UnauthorizedException('Пользователь не имеет доступа к настройкам')
    }
 }

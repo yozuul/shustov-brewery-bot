@@ -1,10 +1,11 @@
-export function dateFormatter(orderDate) {
+export function dateFormatter(orderDate, onlyDate?) {
    const day = orderDate.getDate()
    const month = orderDate.toLocaleString('default', { month: 'long' })
    const hours = orderDate.getHours()
    const minutes = orderDate.getMinutes().toString().padStart(2, '0')
-   console.log(month)
-   // console.log(new Date(month))
+   if(onlyDate) {
+      return `${hours}:${minutes} (${day} ${month})`
+   }
    return `<pre>Ко времени: ${hours}:${minutes} (${day} ${month})</pre>`
 }
 

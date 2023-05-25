@@ -17,3 +17,8 @@ export const USERS_BUTTON =  {
       TEXT: '👈 Назад', ACTION: 'back_action'
    }
 }
+export const ADMIN_BUTTON =  {
+   SETTINGS: {
+      TEXT: 'Настройки ⚙️', ACTION: 'settings'
+   }
+}

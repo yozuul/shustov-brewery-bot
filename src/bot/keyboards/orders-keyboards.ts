@@ -8,8 +8,8 @@ export class OrdersKeyboard {
    ) {}
    // Инициируем меню
    async pushOrdersMenu(ctx) {
-      ctx.session.cart.db_products = await this.productsRepo.getAll()
-      const summ = await this.calc(ctx.session.cart.added_products)
+      ctx.session.cart.db_products = await this.productsRepo.getAllForCart()
+      const summ = this.calc(ctx.session.cart)
       const menu = await ctx.reply(
          `Заказ на сумму ${summ} руб.`, {
             reply_markup: {
@@ -21,7 +21,7 @@ export class OrdersKeyboard {
    }
    // Обновляем меню
    async updateMenu(userId, keyboardId, ctx) {
-      const summ = await this.calc(ctx.session.cart.added_products)
+      const summ = await this.calc(ctx.session.cart)
       await ctx.telegram.editMessageText(
          userId, keyboardId, null,
          `Заказ на сумму ${summ} руб.`, {
@@ -80,15 +80,18 @@ export class OrdersKeyboard {
       })
    }
 
-   async calc(cartProducts) {
-      let summ = 0
-      if(cartProducts.length > 0) {
-         for (let cartProduct of cartProducts) {
-            // ID в корзине хранится в виде product_1
-            const { price } = await this.productsRepo.findByCartId(cartProduct.id)
-            summ += (price * cartProduct.col)
+   calc(cart) {
+      cart.summ = 0
+      const { db_products, added_products } = cart
+      if(added_products.length > 0) {
+         for (let addedProduct of added_products) {
+            const callbackName = addedProduct.callback_data
+            const { price } = db_products.find((product) => {
+               return product.callback_data == callbackName
+            })
+            cart.summ += (price * addedProduct.col)
          }
       }
-      return summ
+      return cart.summ
    }
 }

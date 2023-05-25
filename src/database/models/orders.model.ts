@@ -1,7 +1,7 @@
 import { Column, DataType, Model, Table, ForeignKey, BelongsTo, HasMany } from "sequelize-typescript"
 
 import { Users } from './users.model'
-import { OrdersList } from './orders-list.model.'
+import { OrdersList } from './orders-list.model'
 
 const { INTEGER, FLOAT, DATE, BOOLEAN, STRING } = DataType
 

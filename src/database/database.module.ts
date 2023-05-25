@@ -4,26 +4,26 @@ import { SequelizeModule } from '@nestjs/sequelize'
 
 import { ProductService } from './products.service'
 import { UserService } from './users.service'
-import { OrsderService } from './orders.service'
-import { Users, Products, Orders, OrdersList } from './models'
+import { OrderService } from './orders.service'
+import { SettingsService } from './settings.service'
+import { Users, Products, Orders, OrdersList, Settings } from './models'
+
+const models = [ Users, Products, Orders, OrdersList, Settings ]
+const providers = [ UserService, ProductService, OrderService, SettingsService ]
 
 @Module({
 	imports: [
 		SequelizeModule.forRoot({
 			dialect: 'sqlite',
 			storage: resolve('shustov.db.sqlite'),
-			models: [Users, Products, Orders, OrdersList],
+			models: models,
 			autoLoadModels: true,
 			logging: false,
 		}),
-      SequelizeModule.forFeature([Users, Products, Orders, OrdersList]),
+      SequelizeModule.forFeature(models),
 	],
-   providers: [
-      UserService, ProductService, OrsderService
-   ],
-   exports: [
-      UserService, ProductService, OrsderService
-   ]
+   providers: providers,
+   exports: providers
 })
 
 export class DatabaseModule {}

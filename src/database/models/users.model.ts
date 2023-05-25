@@ -5,10 +5,11 @@ import { Orders } from './orders.model'
 const { INTEGER, STRING } = DataType
 
 interface UserCreationAttrs {
+   role: string
+   name: string
    tgId: string
    phone: string
-   name: string
-   role: string
+   bonus: number
 }
 
 @Table({ tableName: 'users' })
@@ -33,6 +34,10 @@ export class Users extends Model<Users, UserCreationAttrs> {
    @Column({
       type: STRING, allowNull: true
    }) phone: string
+
+   @Column({
+      type: INTEGER, allowNull: true
+   }) bonus: number
 
    @HasMany(() => Orders)
    orders: Orders[]

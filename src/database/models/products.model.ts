@@ -1,6 +1,6 @@
 import { Column, DataType, Model, Table, HasMany } from 'sequelize-typescript'
 
-import { OrdersList } from './orders-list.model.'
+import { OrdersList } from './orders-list.model'
 
 const { INTEGER, STRING } = DataType
 

@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 
 import { Injectable, OnModuleInit } from '@nestjs/common'
 import { GoogleSpreadsheet } from 'google-spreadsheet'
+import {dateFormatter} from '@app/common/utils'
 
 @Injectable()
 export class GoogleSheetsService implements OnModuleInit {
@@ -13,47 +14,29 @@ export class GoogleSheetsService implements OnModuleInit {
 
    async getProducts() {
       await this.useServiceAccountAuth()
-      const doc = this.doc
-      await doc.loadInfo()
-      const sheet = doc.sheetsByIndex[1]
+      await this.doc.loadInfo()
+      const sheet = this.doc.sheetsByIndex[1]
       return sheet.getRows()
    }
 
    async pushOrder(orderData) {
       await this.useServiceAccountAuth()
-      const doc = this.doc
-      await doc.loadInfo()
-      const sheet = doc.sheetsByIndex[0]
-
+      await this.doc.loadInfo()
+      const sheet = this.doc.sheetsByIndex[0]
       const rowData: any = {
          userPhone: orderData.userPhone,
          orderNum: orderData.orderNum,
          orderId: orderData.orderId,
-         date: orderData.date,
-         summ: 1234
+         date: dateFormatter(orderData.date, true),
+         summ: orderData.summ
       }
       for (let orderItem of orderData.orderList) {
-         const productId = `product_${orderItem.productId}`
+         const productId = orderItem['product.callback_data']
          rowData[productId] = orderItem.quantity
       }
-      await sheet.addRow(rowData)
+      const isAdded = await sheet.addRow(rowData)
    }
 
-
-
-   async getDoc(): Promise<GoogleSpreadsheet> {
-
-
-      // adding / removing sheets
-      // const newSheet = await doc.addSheet({ title: 'Шустов' });
-      // await newSheet.delete();
-
-   }
-
-   async onModuleInit() {
-      // await this.useServiceAccountAuth()
-      // await this.getDoc()
-   }
    async useServiceAccountAuth() {
       const config = await this.getConfig()
       await this.doc.useServiceAccountAuth({
@@ -69,5 +52,16 @@ export class GoogleSheetsService implements OnModuleInit {
       } catch (err) {
          console.error(err.message);
       }
+   }
+
+   async getDoc(): Promise<GoogleSpreadsheet> {
+      // adding / removing sheets
+      // const newSheet = await doc.addSheet({ title: 'Шустов' });
+      // await newSheet.delete();
+   }
+
+   async onModuleInit() {
+      // await this.useServiceAccountAuth()
+      // await this.getDoc()
    }
 }

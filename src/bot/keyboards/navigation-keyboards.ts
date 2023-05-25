@@ -1,10 +1,11 @@
-import {USERS_BUTTON} from '@app/common/constants';
+import { ADMIN_BUTTON, USERS_BUTTON } from '@app/common/constants';
 import { Injectable } from '@nestjs/common';
 import { Markup } from 'telegraf'
 
 @Injectable()
 export class NavigationKeyboard {
-   startedUsers() {
+   startedUsers(authUser) {
+      const bonuseNum = authUser?.bonuses ? authUser?.bonuses : 0
       const buttons = [
          Markup.button.callback(
             USERS_BUTTON.STARTED.ABOUT.TEXT,
@@ -15,7 +16,7 @@ export class NavigationKeyboard {
             USERS_BUTTON.STARTED.PRODUCTS.ACTION
          ),
          Markup.button.callback(
-            USERS_BUTTON.STARTED.BONUS.TEXT,
+            `💰 Бонусы (${bonuseNum})`,
             USERS_BUTTON.STARTED.BONUS.ACTION
          ),
          Markup.button.callback(
@@ -23,6 +24,14 @@ export class NavigationKeyboard {
             USERS_BUTTON.STARTED.ORDERS.ACTION
          ),
       ]
+      if(authUser?.role === 'admin') {
+         buttons.push(
+            Markup.button.callback(
+               ADMIN_BUTTON.SETTINGS.TEXT,
+               ADMIN_BUTTON.SETTINGS.ACTION,
+            )
+         )
+      }
       return Markup.keyboard(buttons, {
          columns: 2
       }).resize()

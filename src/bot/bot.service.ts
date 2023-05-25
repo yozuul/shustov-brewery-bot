@@ -12,12 +12,33 @@ export class BotService implements OnModuleInit {
       private bot: Telegraf<SessionContext>
    ) {}
 
+   async checkUsersSubscribe(userId) {
+      let isSended = true
+      console.log(process.env.PUBLIC_GROUP)
+      const publicGroupId = parseInt(-100 + process.env.PUBLIC_GROUP)
+      try {
+         const { status } = await this.bot.telegram.getChatMember(publicGroupId, userId)
+         return status == 'left' ? false : true
+      } catch (error) {
+         console.log(error)
+         isSended = false
+         return isSended
+      }
+   }
+
    async sendOrdersNotify(activeOrder) {
+      let isSended = true
       const ordersChannelId = parseInt(-100 + process.env.ORDERS_CHANNEL)
       const orderText = this.prepareOrdersText(activeOrder)
-      await this.bot.telegram.sendMessage(ordersChannelId, orderText, {
-         parse_mode: 'HTML'
-      })
+      try {
+         await this.bot.telegram.sendMessage(ordersChannelId, orderText, {
+            parse_mode: 'HTML'
+         })
+      } catch (error) {
+         console.log(error)
+         isSended = false
+      }
+      return isSended
    }
 
    prepareOrdersText(order) {
@@ -34,10 +55,11 @@ export class BotService implements OnModuleInit {
       }
       text += `\n`
       text += `Тара: ${order.container}\n`
-      text += `Сумма заказа: 560 руб.\n`
+      text += `Сумма заказа: ${order.summ} руб.\n`
       return text
    }
 
+   async phoneNumChecker(ctx) {}
    async onModuleInit() {
    }
 }
