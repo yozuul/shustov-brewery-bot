@@ -48,9 +48,12 @@ export class OrderService {
    async updateOrderNotifyStatus(orderId) {
       const order = await this.ordersRepo.findOne({
          where: { id: orderId },
+         include: OrdersList
       })
+      console.log(order)
       order.notified = true
       await order.save()
+      await order.reload({ include: [OrdersList] })
       return true
    }
 
@@ -71,7 +74,7 @@ export class OrderService {
                { notified: false }
             ]
          },
-         include: Users
+         include: Users,
       })
       if(activeOrders.length > 0) {
          for (let order of activeOrders) {

@@ -10,10 +10,31 @@ export class ProductService {
       @InjectModel(Products)
       private readonly productsRepo: typeof Products
    ) {}
+
    async updateProducts(newProducts) {
-      await this.productsRepo.destroy({ where: {} })
-      return this.productsRepo.bulkCreate(newProducts)
+      const existProducts = await this.productsRepo.findAll()
+      if(existProducts.length === 0) {
+         await this.productsRepo.bulkCreate(newProducts)
+      } else {
+         for (let exitsProduct of existProducts) {
+            const checked = newProducts.find((newProduct) => {
+               return newProduct.callback_data === exitsProduct.callback_data
+            })
+            if(!checked) {
+               await exitsProduct.destroy()
+            }
+         }
+         for (let newProduct of newProducts) {
+            const checked = existProducts.find((existProduct) => {
+               return newProduct.callback_data === existProduct.callback_data
+            })
+            if(!checked) {
+               await this.productsRepo.create(newProduct)
+            }
+         }
+      }
    }
+
    async findByCallbackData(productCallbackName) {
       return this.productsRepo.findOne({
          where: { callback_data: productCallbackName },

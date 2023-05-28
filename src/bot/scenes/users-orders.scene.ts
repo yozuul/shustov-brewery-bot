@@ -66,11 +66,11 @@ export class UsersOrdersScene {
          for (let addedProduct of addedProducts) {
             if(addedProduct.callback_data === callback_data) {
                if(addedProduct.col > 0 && prefix === 'minus') {
-                  addedProduct.col -= .5
+                  addedProduct.col -= 1
                   this.isUdate = true
                }
                if(prefix === 'plus') {
-                  addedProduct.col += .5
+                  addedProduct.col += 1
                   this.isUdate = true
                }
             }
@@ -80,6 +80,7 @@ export class UsersOrdersScene {
       if(queryData.includes('container')) {
          if(queryData !== ctx.session.cart.container_id) {
             ctx.session.cart.container_id = queryData
+            ctx.session.cart.added_products = []
             this.isUdate = true
          }
       }

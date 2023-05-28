@@ -43,7 +43,7 @@ export class CartKeyboard {
    }
    // ПРОВЕРКА УСЛОВИЙ ПРИ ИЗМЕНЕНИИ ВРЕМЕНИ
    // Проверка времени открытия
-   async checkOpeningTime(updatedTime, ctx) {
+   async checkTimeCorrect(updatedTime, ctx) {
       const updateDate = new Date(updatedTime)
       // Проверяем, что выбранное время не больше времени закрытия
       const openTo = this.openingHours.to
@@ -70,33 +70,48 @@ export class CartKeyboard {
       }
       return true
    }
-   // При изменении времени, убеждаемся что меню уже не висит более 20 минут
-   checkMenuLifeTime(ctx): Date {
+   // При изменении времени, убеждаемся что время в меню актуально
+   checkMenuLifeTime(ctx): boolean {
+      this.isUdate = false
       const currentTime = new Date()
-      // Время работы + 20 минут
-      const maxOrderTime = new Date(currentTime.getTime() + 20 * 60000)
-      if(maxOrderTime > this.openingHours.to) {
+      if(ctx.session.cart.day !== 'day_tomorrow') {
+         const currentTimePlus = new Date(currentTime.setMinutes(currentTime.getMinutes() + 20))
+         if(currentTimePlus > new Date(ctx.session.cart.time)) {
+            ctx.session.cart.time = currentTimePlus
+         }
+      }
+      const updatedCartTime = new Date(ctx.session.cart.time)
+      // Если время корзины получилось больше время закрытия
+      if(updatedCartTime > this.openingHours.to) {
+         console.log('updatedCartTime > this.openingHours.to')
+         // Выставляем время открытия и завтрашний день
          ctx.session.cart.time = this.openingHours.from
          ctx.session.cart.day = 'day_tomorrow'
          this.isUdate = true
-         ctx.answerCbQuery('Онлайн заказ можно сделать минимум за 20 минут до закрытия')
-         return
+         ctx.answerCbQuery('Онлайн заказ будет возможен только на завтра')
       }
-      return new Date(ctx.session.cart.time)
+      if(updatedCartTime < this.openingHours.from) {
+         console.log('uupdatedCartTime < this.openingHours.from')
+         // Выставляем время открытия и завтрашний день
+         ctx.session.cart.time = this.openingHours.from
+         ctx.session.cart.day = 'day_today'
+         this.isUdate = true
+         ctx.answerCbQuery('Мы работаем с 12:00')
+      }
+      return this.isUdate
    }
    // ОБРАБОТКА НАЖАТИЙ [+] / [-]
    // Проверка всех условий и обновление времени в меню
    async updateTime(timeUnit, operator, ctx): Promise<boolean> {
       console.log(timeUnit, operator)
-      this.isUdate = false
-      // Сверяем время показа меню и время нажатия кнопок. Если разница более 20 мин, синхронизируем
-      const cartTime = await this.checkMenuLifeTime(ctx)
-      // Если ничего не вернули, значит уже закрыто
-      if(!cartTime) return this.isUdate
+      // Проверяем что пока пользователь думал, магазин уже не закрылся
+      await this.checkMenuLifeTime(ctx)
+      console.log(this.isUdate)
+      if(this.isUdate) return this.isUdate
       // Выполняем операцию по расчёту времени в зависимости от нажатых пользователем кнопок
-      const updatedTime = this.changeTime(cartTime, timeUnit, operator)
-      // Проверяем, что значение попадает в период времени работы
-      const isUpdate = await this.checkOpeningTime(updatedTime, ctx)
+      const updatedTime = this.changeTime(ctx.session.cart.time, timeUnit, operator)
+      // Проверяем, что значение попадает в период времени работы и не меньше текущего времени
+      const isUpdate = await this.checkTimeCorrect(updatedTime, ctx)
       if(isUpdate) {
          // Если всё норм, обновляем время в сессии, и ставим флаг, что надо обновить меню
          ctx.session.cart.time = new Date(updatedTime)
@@ -121,7 +136,7 @@ export class CartKeyboard {
       if((selectedDay == 'near') || (selectedDay == 'today')) {
          const currentTime = new Date()
          const currentPlus = currentTime.setMinutes(currentTime.getMinutes() + 20)
-         const isUpdate = this.checkOpeningTime(currentPlus, ctx)
+         const isUpdate = this.checkTimeCorrect(currentPlus, ctx)
          if(isUpdate) {
             ctx.session.cart.time = new Date(currentPlus)
             ctx.session.cart.day = dayId
@@ -132,6 +147,7 @@ export class CartKeyboard {
    }
    // Операции со временем при нажатии на кнопки
    changeTime(current, timeUnit, operator) {
+      current = new Date(current)
       if(timeUnit === 'hours') {
          if(operator === 'plus') {
             return current.setHours(current.getHours() + 1)
@@ -241,21 +257,37 @@ export class CartKeyboard {
    }
    // Формирование текста всего заказа
    async totalOrderTextCalc(ctx) {
+      const containerPrice = {
+         container_1: 15, container_2: 3000
+      }
+      const containerId = ctx.session.cart.container_id
       let orderText = ''
-      let totalSumm = null
       const { db_products, added_products } = ctx.session.cart
       for (let addedProduct of added_products) {
          const callbackName = addedProduct.callback_data
          const { price, name } = db_products.find((product) => {
             return product.callback_data == callbackName
          })
-         const sumPerProduct = addedProduct.col * price
-         totalSumm += sumPerProduct
-         orderText += `<b>${name}: ${addedProduct.col} л.</b>\n`
-         orderText += `Сумма: ${sumPerProduct} руб. (${price} руб./литр)\n`
+         let sumPerProduct = 0
+         let totalLittre = 0
+         let containerSumm = ''
+         if(containerId === 'container_1') {
+            totalLittre = addedProduct.col * 1.5
+            sumPerProduct = price * totalLittre
+            containerSumm = (addedProduct.col * containerPrice.container_1) + 'руб./тара'
+         }
+         if(containerId === 'container_2') {
+            totalLittre = addedProduct.col * 25
+            sumPerProduct = price * totalLittre
+            containerSumm += (addedProduct.col * 100) + ' руб./аренда в сутки + '
+            containerSumm += 'залог ' + (addedProduct.col * containerPrice.container_2)
+            containerSumm += ' руб. за тару'
+         }
+         orderText += `<b>${name}: ${totalLittre} л.</b>\n`
+         orderText += `Сумма: ${sumPerProduct} руб. — ${price} руб./литр \n+ ${containerSumm}\n`
          orderText += `---\n`
       }
-      orderText += `💳 К ОПЛАТЕ: ${totalSumm} руб.`
+      orderText += `💳 К ОПЛАТЕ: ${ctx.session.cart.summ} руб.`
       return orderText
    }
 

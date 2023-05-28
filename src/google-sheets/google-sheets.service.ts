@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 
 import { Injectable, OnModuleInit } from '@nestjs/common'
 import { GoogleSpreadsheet } from 'google-spreadsheet'
-import {dateFormatter} from '@app/common/utils'
+import { dateFormatter } from '@app/common/utils'
 
 @Injectable()
 export class GoogleSheetsService implements OnModuleInit {
@@ -27,14 +27,22 @@ export class GoogleSheetsService implements OnModuleInit {
          userPhone: orderData.userPhone,
          orderNum: orderData.orderNum,
          orderId: orderData.orderId,
-         date: dateFormatter(orderData.date, true),
+         date: dateFormatter(new Date(orderData.date), true),
          summ: orderData.summ
       }
       for (let orderItem of orderData.orderList) {
+         let littre = 0
+         if(orderData.container === '1,5') {
+            littre = orderItem.quantity * 1.5
+         }
+         if(orderData.container === 'Кега') {
+            littre = orderItem.quantity * 25
+         }
          const productId = orderItem['product.callback_data']
-         rowData[productId] = orderItem.quantity
+         rowData[productId] = littre
       }
       const isAdded = await sheet.addRow(rowData)
+      // console.log('isAdded:', isAdded)
    }
 
    async useServiceAccountAuth() {

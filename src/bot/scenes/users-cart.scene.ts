@@ -6,7 +6,7 @@ import { SbisService } from 'src/sbis/sbis.service'
 import { OrderService, UserService } from '@app/database'
 
 import { NavigationKeyboard, CartKeyboard } from '@bot/keyboards'
-import { trashCleaner } from '@app/common/utils'
+import { dateFormatter, trashCleaner } from '@app/common/utils'
 import { SessionContext } from '@app/common/interfaces'
 
 @Scene(USERS_SCENE.CART)
@@ -46,13 +46,19 @@ export class UsersCartScene {
    async onSceneLeave(@Ctx() ctx: SessionContext) {
       await trashCleaner(ctx)
    }
-
+   async setErrorTime(ctx, userId, keyboardId) {
+      const currentTime = new Date()
+      console.log(ctx.session.cart.time)
+      ctx.session.cart.time = new Date(currentTime.setHours(currentTime.getHours() - 8))
+      await this.cartKeyboard.updateMenu(userId, keyboardId, ctx)
+   }
    @On('callback_query')
    async submitOrdersHandler(@Ctx() ctx: SessionContext, @Sender('id') userId) {
       const query = ctx.callbackQuery
       const queryData = query['data']
       const keyboardId = query.message.message_id
       // Подтверждение заказа
+      // await this.setErrorTime(userId, keyboardId, ctx)
       if(queryData === 'place_order') {
          const allert = {
             subscribe: '', bonus: ''
@@ -91,27 +97,41 @@ export class UsersCartScene {
          if(!errorAllertText) {
             const checkSbisUser = await this.sbisService.findUser(isUserExist.phone)
             if(!checkSbisUser) {
-               await this.usersRepo.deleteUser(isUserExist.phone)
+               if(isUserExist.role !== 'admin') {
+                  await this.usersRepo.deleteUser(isUserExist.phone)
+               }
                await ctx.reply(
                   `Номер ${isUserExist.phone} не зарегистрирован в качестве участника бонусной программы.\nПожалуйста, обратитесь к нашему продавцу.`,
                   this.navigationKeyboard.backAuthButton()
                )
             }
             if(checkSbisUser) {
-               const order = await this.orderRepo.addOrder(isUserExist.id, ctx.session.cart)
-               if(!order) {
-                  await ctx.reply('При оформлении заказа возникла непредвиденна ошибка.')
+               const isTimeIncorect = this.cartKeyboard.checkMenuLifeTime(ctx)
+               console.log(isTimeIncorect)
+               if(isTimeIncorect) {
+                  ctx.session.cart.day = 'day_tomorrow'
+                  await ctx.reply('Заказ на указанное время уже недоступен')
+                  await this.cartKeyboard.updateMenu(userId, keyboardId, ctx)
+                  return
+               }
+               if(!isTimeIncorect) {
+                  const order = await this.orderRepo.addOrder(isUserExist.id, ctx.session.cart)
+                  if(!order) {
+                     await ctx.reply('При оформлении заказа возникла непредвиденна ошибка.')
+                     await ctx.scene.enter(USERS_SCENE.STARTED)
+                  }
+                  const date = dateFormatter(new Date(ctx.session.cart.time))
+                  let submitMsg = ''
+                  submitMsg += `<b>Заказ # ${order} принят</b> 🍺\n`
+                  submitMsg += date
+                  submitMsg += `При обращении в магазин, пожалуйста, сообщите продавцу его номер, а также последние 4 цифры своего телефона\n---\n`
+                  submitMsg += ctx.session.cart.orderText
+                  submitMsg += `\nБлагодарим, что воспользоватлись нашим сервисом.`
+                  await ctx.reply(submitMsg, {
+                     parse_mode: 'HTML'
+                  })
                   await ctx.scene.enter(USERS_SCENE.STARTED)
                }
-               let submitMsg = ''
-               submitMsg += `<b>Заказ # ${order} принят</b> 🍺\n`
-               submitMsg += `При обращении в магазин, пожалуйста, сообщите продавцу его номер, а также последние 4 цифры своего телефона\n---\n`
-               submitMsg += ctx.session.cart.orderText
-               submitMsg += `\nБлагодарим, что воспользоватлись нашим сервисом.`
-               await ctx.reply(submitMsg, {
-                  parse_mode: 'HTML'
-               })
-               await ctx.scene.enter(USERS_SCENE.STARTED)
             }
          }
       }
@@ -172,7 +192,7 @@ export class UsersCartScene {
       const isSubscribed = await this.botService.checkUsersSubscribe(message.from.id)
       if(!isSubscribed) {
          reply += 'Осталось только подписаться на наш канал\n'
-         reply += 'https://t.me/asdadsasdadssa\n'
+         reply += 'https://t.me/shustov_brewery_chanel\n'
          reply += 'После этого, нажмите кнопку подтверждения заказа ещё раз'
       }
       if(isSubscribed) {

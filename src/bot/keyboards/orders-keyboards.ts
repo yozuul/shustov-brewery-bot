@@ -9,7 +9,7 @@ export class OrdersKeyboard {
    // Инициируем меню
    async pushOrdersMenu(ctx) {
       ctx.session.cart.db_products = await this.productsRepo.getAllForCart()
-      const summ = this.calc(ctx.session.cart)
+      const summ = this.calc(ctx)
       const menu = await ctx.reply(
          `Заказ на сумму ${summ} руб.`, {
             reply_markup: {
@@ -21,7 +21,7 @@ export class OrdersKeyboard {
    }
    // Обновляем меню
    async updateMenu(userId, keyboardId, ctx) {
-      const summ = await this.calc(ctx.session.cart)
+      const summ = await this.calc(ctx)
       await ctx.telegram.editMessageText(
          userId, keyboardId, null,
          `Заказ на сумму ${summ} руб.`, {
@@ -80,18 +80,29 @@ export class OrdersKeyboard {
       })
    }
 
-   calc(cart) {
-      cart.summ = 0
-      const { db_products, added_products } = cart
+   calc(ctx) {
+      const container = ctx.session.cart.container_id
+      const containerPrice = {
+         container_1: 15, container_2: 3100
+      }
+      ctx.session.cart.summ = 0
+      const { db_products, added_products } = ctx.session.cart
       if(added_products.length > 0) {
          for (let addedProduct of added_products) {
             const callbackName = addedProduct.callback_data
             const { price } = db_products.find((product) => {
                return product.callback_data == callbackName
             })
-            cart.summ += (price * addedProduct.col)
+            if(container === 'container_1') {
+               const containerSumm = containerPrice.container_1 * addedProduct.col
+               ctx.session.cart.summ += (price * (addedProduct.col * 1.5)) + containerSumm
+            }
+            if(container === 'container_2') {
+               const containerSumm = containerPrice.container_2 * addedProduct.col
+               ctx.session.cart.summ += (price * (addedProduct.col * 25)) + containerSumm
+            }
          }
       }
-      return cart.summ
+      return ctx.session.cart.summ
    }
 }

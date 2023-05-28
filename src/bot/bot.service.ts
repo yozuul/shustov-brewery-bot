@@ -44,6 +44,10 @@ export class BotService implements OnModuleInit {
    prepareOrdersText(order) {
       const { phoneDig, formattedPhone } = phoneFormatter(order.userPhone)
       const date = dateFormatter(order.date)
+      let caontainerText = `Тара: ${order.container}\n`
+      if(order.container === 'Кега') {
+         caontainerText = `Тара: ‼️ ${order.container} ‼️\n`
+      }
       let text = ``
       text += `<b>Заказ # ${order.orderNum} | ${phoneDig}</b>\n`
       text += `${date}\n`
@@ -51,10 +55,10 @@ export class BotService implements OnModuleInit {
       text += `Телефон: ${formattedPhone}\n`
       text += `\n`
       for (let product of order.orderList) {
-         text += `▫️ ${product['product.name']} - ${product.quantity} л.\n`
+         text += `▫️ ${product['product.name']} - ${product.quantity} шт.\n`
       }
       text += `\n`
-      text += `Тара: ${order.container}\n`
+      text += caontainerText
       text += `Сумма заказа: ${order.summ} руб.\n`
       return text
    }

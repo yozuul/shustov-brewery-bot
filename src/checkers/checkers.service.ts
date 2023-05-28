@@ -107,7 +107,7 @@ export class CheckerService implements OnModuleInit {
    }
 
    onModuleInit() {
-      // this.checkProducts()
+      this.checkProducts()
       // this.checkOrders()
    }
 }
