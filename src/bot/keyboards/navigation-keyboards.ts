@@ -11,14 +11,14 @@ export class NavigationKeyboard {
             USERS_BUTTON.STARTED.ABOUT.TEXT,
             USERS_BUTTON.STARTED.ABOUT.ACTION
          ),
-         Markup.button.callback(
-            USERS_BUTTON.STARTED.PRODUCTS.TEXT,
-            USERS_BUTTON.STARTED.PRODUCTS.ACTION
-         ),
-         Markup.button.callback(
-            `💰 Бонусы (${bonuseNum})`,
-            USERS_BUTTON.STARTED.BONUS.ACTION
-         ),
+         // Markup.button.callback(
+         //    USERS_BUTTON.STARTED.PRODUCTS.TEXT,
+         //    USERS_BUTTON.STARTED.PRODUCTS.ACTION
+         // ),
+         // Markup.button.callback(
+         //    `💰 Бонусы (${bonuseNum})`,
+         //    USERS_BUTTON.STARTED.BONUS.ACTION
+         // ),
          Markup.button.callback(
             USERS_BUTTON.STARTED.ORDERS.TEXT,
             USERS_BUTTON.STARTED.ORDERS.ACTION

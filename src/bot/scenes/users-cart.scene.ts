@@ -71,7 +71,7 @@ export class UsersCartScene {
          if(!isSubscribed) {
             allert.subscribe += 'Для онлайн заказа необходимо быть участником нашей группы'
             message.subscribe += 'Пожалуйста, подпишитесь на нашу группу\n'
-            message.subscribe += 'https://t.me/asdadsasdadssa'
+            message.subscribe += '@shustov_brewery_chanel'
          }
          // Если пользователь уже подтверждал телефон, он будет в базе
          const isUserExist = await this.usersRepo.isUserAuth(userId)
@@ -107,7 +107,6 @@ export class UsersCartScene {
             }
             if(checkSbisUser) {
                const isTimeIncorect = this.cartKeyboard.checkMenuLifeTime(ctx)
-               console.log(isTimeIncorect)
                if(isTimeIncorect) {
                   ctx.session.cart.day = 'day_tomorrow'
                   await ctx.reply('Заказ на указанное время уже недоступен')
@@ -120,7 +119,11 @@ export class UsersCartScene {
                      await ctx.reply('При оформлении заказа возникла непредвиденна ошибка.')
                      await ctx.scene.enter(USERS_SCENE.STARTED)
                   }
-                  const date = dateFormatter(new Date(ctx.session.cart.time))
+                  const cartDate = new Date(ctx.session.cart.time)
+                  if(ctx.session.cart.day === 'day_tomorrow') {
+                     cartDate.setDate(cartDate.getDate() + 1)
+                  }
+                  const date = dateFormatter(new Date(cartDate))
                   let submitMsg = ''
                   submitMsg += `<b>Заказ # ${order} принят</b> 🍺\n`
                   submitMsg += date
@@ -192,7 +195,7 @@ export class UsersCartScene {
       const isSubscribed = await this.botService.checkUsersSubscribe(message.from.id)
       if(!isSubscribed) {
          reply += 'Осталось только подписаться на наш канал\n'
-         reply += 'https://t.me/shustov_brewery_chanel\n'
+         reply += '@shustov_brewery_chanel\n'
          reply += 'После этого, нажмите кнопку подтверждения заказа ещё раз'
       }
       if(isSubscribed) {

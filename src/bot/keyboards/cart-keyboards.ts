@@ -37,7 +37,7 @@ export class CartKeyboard {
    // Время работы
    get openingHours() {
       return {
-         from: this.formatterHoursMinutes(12, 0),
+         from: this.formatterHoursMinutes(11, 0),
          to: this.formatterHoursMinutes(23, 0),
       }
    }
@@ -47,22 +47,22 @@ export class CartKeyboard {
       const updateDate = new Date(updatedTime)
       // Проверяем, что выбранное время не больше времени закрытия
       const openTo = this.openingHours.to
-      const openToMinus = new Date(openTo.setMinutes(openTo.getMinutes() - 10))
+      const openToMinus = new Date(openTo.setMinutes(openTo.getMinutes() - 20))
       if(updateDate > openToMinus) {
          await ctx.answerCbQuery('Мы работаем до 23:00')
          return false
       }
       // Проверяем, что выбранное время не меньше времени открытия
       const openFrom = this.openingHours.from
-      const openFromMinus = new Date(openFrom.setMinutes(openFrom.getMinutes() + 10))
+      const openFromMinus = new Date(openFrom.setMinutes(openFrom.getMinutes() + 20))
       if(updateDate < openFromMinus) {
-         await ctx.answerCbQuery('Мы работаем c 12:00')
+         await ctx.answerCbQuery('Мы работаем c 11:00')
          return false
       }
       // Проверяем что выбранное время не меньше текущего + 10 мин
       if(ctx.session.cart.day !== 'day_tomorrow') { // Если заказ не на завтра
          const currentTimePlus = new Date()
-         currentTimePlus.setMinutes(currentTimePlus.getMinutes() + 10)
+         currentTimePlus.setMinutes(currentTimePlus.getMinutes() + 20)
          if(updateDate < currentTimePlus) {
             await ctx.answerCbQuery('Нельзя указать время меньше текущего')
             return false

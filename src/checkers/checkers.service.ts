@@ -73,9 +73,9 @@ export class CheckerService implements OnModuleInit {
       let ordersTimeToday = []
       if(tomorrowOrders.length > 0) {
          for (let order of tomorrowOrders) {
-            const currentTimeMinus = new Date()
-            currentTimeMinus.setHours(currentTimeMinus.getHours() - 1)
-            if(currentTimeMinus > order.date) {
+            const currentTimePlus = new Date()
+            currentTimePlus.setHours(currentTimePlus.getHours() + 1)
+            if(currentTimePlus > new Date(order.date)) {
                ordersTimeToday.push(order)
             }
          }
@@ -107,7 +107,7 @@ export class CheckerService implements OnModuleInit {
    }
 
    onModuleInit() {
-      this.checkProducts()
-      // this.checkOrders()
+      // this.checkProducts()
+      this.checkOrders()
    }
 }
