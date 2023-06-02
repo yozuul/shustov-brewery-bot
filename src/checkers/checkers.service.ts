@@ -36,14 +36,12 @@ export class CheckerService implements OnModuleInit {
    async checkOrders() {
       let sended = false
       console.log('+CheckerService [checkOrders]')
-      let todayOrders = await this.orderRepo.getOrders('today')
+      let todayOrders = await this.orderRepo.getOrders('today', false)
       console.log('Новых заказов на сегодня к рассылке:', todayOrders.length)
-      let tomorrowOrders: any = await this.orderRepo.getOrders('tomorrow')
-      tomorrowOrders = this.dateChecker(tomorrowOrders)
+      let tomorrowOrders: any = await this.orderRepo.getOrders('tomorrow', false)
       const currentOrders = [...todayOrders, ...tomorrowOrders]
       if(currentOrders.length > 0) {
          for (let order of currentOrders) {
-            console.log(order)
             if(order.orderId) {
                try {
                   await this.botService.sendOrdersNotify(order)
@@ -108,6 +106,6 @@ export class CheckerService implements OnModuleInit {
 
    onModuleInit() {
       // this.checkProducts()
-      this.checkOrders()
+      // this.checkOrders()
    }
 }

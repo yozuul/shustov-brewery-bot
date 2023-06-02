@@ -47,14 +47,14 @@ export class CartKeyboard {
       const updateDate = new Date(updatedTime)
       // Проверяем, что выбранное время не больше времени закрытия
       const openTo = this.openingHours.to
-      const openToMinus = new Date(openTo.setMinutes(openTo.getMinutes() - 20))
+      const openToMinus = new Date(openTo.setMinutes(openTo.getMinutes() - 19))
       if(updateDate > openToMinus) {
          await ctx.answerCbQuery('Мы работаем до 23:00')
          return false
       }
       // Проверяем, что выбранное время не меньше времени открытия
       const openFrom = this.openingHours.from
-      const openFromMinus = new Date(openFrom.setMinutes(openFrom.getMinutes() + 20))
+      const openFromMinus = new Date(openFrom.setMinutes(openFrom.getMinutes() + 19))
       if(updateDate < openFromMinus) {
          await ctx.answerCbQuery('Мы работаем c 11:00')
          return false
@@ -91,12 +91,12 @@ export class CartKeyboard {
          ctx.answerCbQuery('Онлайн заказ будет возможен только на завтра')
       }
       if(updatedCartTime < this.openingHours.from) {
-         console.log('uupdatedCartTime < this.openingHours.from')
+         console.log('updatedCartTime < this.openingHours.from')
          // Выставляем время открытия и завтрашний день
          ctx.session.cart.time = this.openingHours.from
          ctx.session.cart.day = 'day_today'
          this.isUdate = true
-         ctx.answerCbQuery('Мы работаем с 12:00')
+         ctx.answerCbQuery('Мы работаем с 11:00')
       }
       return this.isUdate
    }
@@ -133,10 +133,14 @@ export class CartKeyboard {
          ctx.session.cart.day = dayId
          this.isUdate = true
       }
+      if(selectedDay == 'today') {
+         ctx.session.cart.day = dayId
+         this.isUdate = true
+      }
       if((selectedDay == 'near') || (selectedDay == 'today')) {
          const currentTime = new Date()
          const currentPlus = currentTime.setMinutes(currentTime.getMinutes() + 20)
-         const isUpdate = this.checkTimeCorrect(currentPlus, ctx)
+         const isUpdate = await this.checkTimeCorrect(currentPlus, ctx)
          if(isUpdate) {
             ctx.session.cart.time = new Date(currentPlus)
             ctx.session.cart.day = dayId

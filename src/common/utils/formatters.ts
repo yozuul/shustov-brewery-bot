@@ -1,6 +1,6 @@
 export function dateFormatter(orderDate, onlyDate?) {
    const day = orderDate.getDate()
-   const month = orderDate.toLocaleString('default', { month: 'long' })
+   const month = orderDate.toLocaleString('ru', { month: 'long' })
    const hours = orderDate.getHours()
    const minutes = orderDate.getMinutes().toString().padStart(2, '0')
    if(onlyDate) {
