@@ -261,6 +261,9 @@ export class CartKeyboard {
    }
    // Формирование текста всего заказа
    async totalOrderTextCalc(ctx) {
+      ctx.session.cart.added_products = ctx.session.cart.added_products.filter((product) => {
+         return product.col !== 0
+      })
       const containerPrice = {
          container_1: 15, container_2: 3000
       }

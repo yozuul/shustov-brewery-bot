@@ -65,7 +65,7 @@ export class OrderService {
       })
    }
 
-   async getOrders(day, notified) {
+   async getOrders(day) {
       const ordersData = []
       const activeOrders = await this.ordersRepo.findAll({
          where: {

@@ -54,7 +54,11 @@ export class UsersBonusScene {
    async handlerContacts(@Ctx() ctx: SessionContext) {
       const message = ctx.update['message']
       const userPhone = parseInt(message?.contact?.phone_number)
-      await ctx.deleteMessage()
+      try {
+         await ctx.deleteMessage()
+      } catch (error) {
+         console.log(error)
+      }
       if(!userPhone) {
          ctx.reply('Не смогли проверить ваш телефон')
          return false

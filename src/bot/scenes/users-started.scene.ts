@@ -89,7 +89,7 @@ export class UserStartedScene {
    cleanSession(ctx) {
       ctx.session.cart = {
          db_products: [],
-         added_products: [], summ: 0, orderText: null,
+         added_products: [], summ: 0, beerSumm: 0, orderText: null,
          container_id: 'container_1',
          day: 'day_near', time: null
       }

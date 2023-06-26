@@ -23,13 +23,21 @@ export class BotUpdate {
    @On('callback_query')
    async handleNonSceneCallback(@Ctx() ctx: SessionContext) {
       await ctx.answerCbQuery('Меню устарело')
-      await ctx.deleteMessage()
+      try {
+         await ctx.deleteMessage()
+      } catch (error) {
+         console.log(error)
+      }
       await ctx.scene.enter(USERS_SCENE.STARTED)
    }
    @On('contact')
    async handlerContacts(@Ctx() ctx: SessionContext) {
       await ctx.answerCbQuery('Меню устарело')
-      await ctx.deleteMessage()
+      try {
+         await ctx.deleteMessage()
+      } catch (error) {
+         console.log(error)
+      }
       await ctx.scene.enter(USERS_SCENE.STARTED)
    }
 

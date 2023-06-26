@@ -1,0 +1,15 @@
+0|telegram |     at /home/telegram-bot/node_modules/nestjs-telegraf/dist/services/listeners-explorer.service.js:134:32
+0|telegram |     at execute (/home/telegram-bot/node_modules/telegraf/lib/composer.js:485:17)
+0|telegram |     at /home/telegram-bot/node_modules/telegraf/lib/composer.js:486:21
+0|telegram |     at execute (/home/telegram-bot/node_modules/telegraf/lib/composer.js:485:17)
+0|telegram |     at /home/telegram-bot/node_modules/telegraf/lib/composer.js:486:21 {
+0|telegram |   response: {
+0|telegram |     ok: false,
+0|telegram |     error_code: 400,
+0|telegram |     description: "Bad Request: message can't be deleted for everyone"
+0|telegram |   },
+0|telegram |   on: {
+0|telegram |     method: 'deleteMessage',
+0|telegram |     payload: { chat_id: 301341939, message_id: 7236 }
+0|telegram |   }
+0|telegram | }
